@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fedelesh Petals</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 10px; background-color: var(--tg-theme-bg-color, #fff); color: var(--tg-theme-text-color, #000); }
+        .container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .card { border: 1px solid #eee; border-radius: 10px; padding: 10px; text-align: center; background: var(--tg-theme-secondary-bg-color, #f9f9f9); }
+        .card img { width: 100%; border-radius: 8px; height: 100px; object-fit: cover; }
+        .title { font-size: 14px; font-weight: bold; margin: 5px 0; }
+        .price { color: #e91e63; font-weight: bold; }
+        .btn { background-color: #388e3c; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-top: 5px; width: 100%; }
+        .btn-remove { background-color: #d32f2f; display: none; }
+    </style>
+</head>
+<body>
+
+    <h2 style="text-align:center;">Fedelesh Petals 🌸</h2>
+    <div class="container" id="list"></div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Розгортаємо на весь екран
+
+        // Список товарів (має співпадати з тим, що ви хочете продавати)
+        const products = [
+            {id: "p1", name: "101 Троянда", price: 5000, img: "https://i.imgur.com/bKj1xJt.jpeg"},
+            {id: "p2", name: "Тюльпани", price: 1200, img: "https://i.imgur.com/HoH0YwX.jpeg"},
+            {id: "p3", name: "Півонії Box", price: 2500, img: "https://i.imgur.com/zN2ZgqM.jpeg"},
+            {id: "p4", name: "Авторський", price: 1800, img: "https://i.imgur.com/Xq3xFzV.jpeg"}
+        ];
+
+        const cart = {};
+        const list = document.getElementById("list");
+        const mainBtn = tg.MainButton;
+
+        // Генерація карток товарів
+        products.forEach(item => {
+            const el = document.createElement("div");
+            el.className = "card";
+            el.innerHTML = `
+                <img src="${item.img}">
+                <div class="title">${item.name}</div>
+                <div class="price">${item.price} грн</div>
+                <button class="btn" id="btn${item.id}" onclick="toggleItem('${item.id}', ${item.price})">Додати</button>
+            `;
+            list.appendChild(el);
+        });
+
+        // Логіка додавання в кошик
+        function toggleItem(id, price) {
+            const btn = document.getElementById("btn" + id);
+            if (!cart[id]) {
+                cart[id] = { count: 1, price: price };
+                btn.innerText = "Видалити";
+                btn.style.backgroundColor = "#d32f2f";
+            } else {
+                delete cart[id];
+                btn.innerText = "Додати";
+                btn.style.backgroundColor = "#388e3c";
+            }
+            updateMainButton();
+        }
+
+        function updateMainButton() {
+            let total = 0;
+            for (let k in cart) total += cart[k].price;
+            
+            if (total > 0) {
+                mainBtn.setText(`Замовити на ${total} грн`);
+                mainBtn.show();
+            } else {
+                mainBtn.hide();
+            }
+        }
+
+        // Відправка даних назад у бота
+        Telegram.WebApp.onEvent("mainButtonClicked", function(){
+            const data = JSON.stringify(cart);
+            tg.sendData(data);
+        });
+    </script>
+</body>
+</html>
