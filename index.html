@@ -8,43 +8,116 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: var(--tg-theme-bg-color, #fff); --text: var(--tg-theme-text-color, #000); --accent: #e91e63; --secondary: #f4f4f4; }
-        body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
-        .scene { display: none; } .scene.active { display: block; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-bottom: 80px; }
-        .card { background: var(--secondary); border-radius: 12px; overflow: hidden; }
-        .card img { width: 100%; height: 120px; object-fit: cover; }
-        .info { padding: 10px; }
-        .price { font-weight: bold; color: var(--accent); }
-        .btn-add { width: 100%; padding: 8px; border: 1px solid var(--accent); color: var(--accent); border-radius: 8px; background: none; margin-top: 5px;}
-        .btn-add.active { background: var(--accent); color: white; }
-        .form-group { margin-bottom: 10px; } input, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;}
-        #admin-btn { position: fixed; bottom: 20px; left: 20px; width: 50px; height: 50px; background: #333; color: white; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; }
+        :root { --bg: var(--tg-theme-bg-color, #fff); --text: var(--tg-theme-text-color, #000); --accent: #e91e63; --secondary: #f9f9f9; }
+        body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; -webkit-tap-highlight-color: transparent; }
+        
+        /* Анімації та сцени */
+        .scene { display: none; animation: fade 0.3s ease-in-out; }
+        .scene.active { display: block; }
+        @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Стиль карток */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-bottom: 80px; }
+        .card { background: var(--secondary); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: transform 0.2s; position: relative; }
+        .card:active { transform: scale(0.98); }
+        
+        .image-wrapper { height: 130px; width: 100%; position: relative; background: #eee; }
+        .image-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .info { padding: 12px; }
+        .name { font-weight: 600; font-size: 14px; margin-bottom: 4px; line-height: 1.2; }
+        .price { font-weight: 700; color: var(--accent); font-size: 15px; }
+        
+        /* Кнопка додавання */
+        .btn-add { 
+            width: 100%; padding: 10px; margin-top: 8px; 
+            border: 1.5px solid var(--accent); color: var(--accent); 
+            background: transparent; border-radius: 10px; 
+            font-weight: 600; font-size: 13px; cursor: pointer; 
+            transition: all 0.2s;
+        }
+        .btn-add.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+        /* Поля вводу */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 12px; margin-bottom: 5px; opacity: 0.7; }
+        input, textarea { 
+            width: 100%; padding: 14px; 
+            border: 1px solid #ddd; border-radius: 12px; 
+            background: var(--secondary); color: var(--text); 
+            box-sizing: border-box; font-family: inherit; font-size: 16px;
+        }
+        input:focus, textarea:focus { border-color: var(--accent); outline: none; }
+
+        /* Адмін кнопка */
+        #admin-btn { 
+            position: fixed; bottom: 20px; left: 20px; 
+            width: 50px; height: 50px; border-radius: 50%; 
+            background: #222; color: white; 
+            display: none; align-items: center; justify-content: center; 
+            font-size: 28px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); 
+            z-index: 999; cursor: pointer;
+        }
+
+        /* Заголовки та навігація */
+        header { text-align: center; margin-bottom: 20px; }
+        h1 { margin: 0; font-size: 22px; background: linear-gradient(45deg, #e91e63, #ff9a9e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .back-btn { display: inline-block; margin-bottom: 15px; color: var(--accent); font-weight: 600; cursor: pointer; padding: 5px 0; }
+        
+        #loader { text-align: center; margin-top: 50px; color: #888; }
+        .error-msg { color: #d32f2f; background: #ffebee; padding: 15px; border-radius: 10px; text-align: center; margin: 20px; font-size: 14px; border: 1px solid #ffcdd2; }
     </style>
 </head>
 <body>
 
     <div id="scene-shop" class="scene active">
-        <h2 style="text-align:center;">Fedelesh Petals 🌸</h2>
-        <div id="loader" style="text-align:center; padding: 20px;">Завантаження бази даних...</div>
+        <header>
+            <h1>Fedelesh Petals 🌸</h1>
+        </header>
+        
+        <div id="loader">Завантаження квітів...</div>
+        <div id="error-container"></div>
+        
         <div class="grid" id="product-list"></div>
     </div>
 
     <div id="scene-checkout" class="scene">
-        <div onclick="showScene('shop')" style="margin-bottom:15px; color:var(--accent);">← Назад</div>
-        <h2>Оформлення</h2>
-        <div class="form-group"><input type="text" id="order-name" placeholder="Ім'я"></div>
-        <div class="form-group"><input type="tel" id="order-phone" placeholder="Телефон"></div>
-        <div class="form-group"><textarea id="order-address" rows="3" placeholder="Адреса"></textarea></div>
+        <div class="back-btn" onclick="showScene('shop')">← Назад до каталогу</div>
+        <h2 style="margin-top:0;">Оформлення замовлення 📝</h2>
+        <div class="form-group">
+            <label>Ваше Ім'я</label>
+            <input type="text" id="order-name" placeholder="Іван">
+        </div>
+        <div class="form-group">
+            <label>Телефон</label>
+            <input type="tel" id="order-phone" placeholder="+380...">
+        </div>
+        <div class="form-group">
+            <label>Адреса доставки</label>
+            <textarea id="order-address" rows="3" placeholder="Вулиця, дім..."></textarea>
+        </div>
+        <div class="form-group">
+            <label>Коментар (необов'язково)</label>
+            <textarea id="order-comment" rows="2"></textarea>
+        </div>
     </div>
 
     <div id="scene-admin" class="scene">
-        <div onclick="showScene('shop')" style="margin-bottom:15px; color:var(--accent);">← Назад</div>
-        <h2>Новий товар</h2>
-        <div class="form-group"><input type="text" id="new-name" placeholder="Назва"></div>
-        <div class="form-group"><input type="number" id="new-price" placeholder="Ціна"></div>
-        <div class="form-group"><input type="text" id="new-img" placeholder="URL фото"></div>
-        <button onclick="saveProduct()" style="width:100%; padding:15px; background:var(--accent); color:white; border:none; border-radius:10px;">Зберегти</button>
+        <div class="back-btn" onclick="showScene('shop')">← Назад</div>
+        <h2>Додати товар ⚙️</h2>
+        <div class="form-group">
+            <label>Назва</label>
+            <input type="text" id="new-name">
+        </div>
+        <div class="form-group">
+            <label>Ціна (грн)</label>
+            <input type="number" id="new-price">
+        </div>
+        <div class="form-group">
+            <label>Посилання на фото</label>
+            <input type="text" id="new-img" placeholder="https://...">
+        </div>
+        <button onclick="saveProduct()" style="width:100%; padding:15px; background:var(--accent); color:white; border:none; border-radius:12px; font-weight:bold; font-size:16px;">Зберегти товар</button>
     </div>
 
     <div id="admin-btn" onclick="showScene('admin')">+</div>
@@ -53,101 +126,159 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // ВАШІ КЛЮЧІ (Я перевірив, вони вірні)
+        // ==========================================
+        // ВАШІ ДАНІ (ВЖЕ ВСТАВЛЕНІ)
+        // ==========================================
         const SUPABASE_URL = 'https://qgdnvpmdfqsgtftfkcrm.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_v3KiNJYeKJPgFJ31Q3Q4xw_ZYIGQUn0';
+        
+        // ВАШ НОВИЙ ПРАВИЛЬНИЙ КЛЮЧ
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnZG52cG1kZnFzZ3RmdGZrY3JtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc4MTY0MDUsImV4cCI6MjA4MzM5MjQwNX0.YF4VlFg4PuiagvWh_LKxaBinKjtrtgjYDfaO3ZYuRBY';
+        
         const ADMIN_ID = 7240918914;
+        // ==========================================
 
         let supabase;
-        let cart = {}; 
+        let cart = {};
         let products = [];
 
         async function init() {
             try {
-                // Перевірка бібліотеки
-                if (!window.supabase) throw new Error("Бібліотека Supabase не завантажилась");
-                
+                if (!window.supabase) throw new Error("Бібліотека Supabase не завантажилась. Перевірте інтернет.");
+
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                
-                // Перевірка адміна
+
+                // Показуємо кнопку адміна тільки вам
                 if (tg.initDataUnsafe.user && tg.initDataUnsafe.user.id === ADMIN_ID) {
                     document.getElementById('admin-btn').style.display = 'flex';
                 }
 
-                // Завантаження товарів
-                const { data, error } = await supabase.from('products').select('*');
-                
-                if (error) throw error;
-                if (!data || data.length === 0) throw new Error("База порожня. Виконайте SQL-команди!");
+                // Завантажуємо товари
+                const { data, error } = await supabase.from('products').select('*').order('id', { ascending: true });
 
-                products = data;
+                if (error) throw error;
+                
+                products = data || [];
                 renderProducts();
 
             } catch (err) {
-                // ВИВЕДЕННЯ ПОМИЛКИ НА ЕКРАН
-                document.getElementById('loader').innerHTML = `
-                    <div style="color:red; font-weight:bold;">Помилка!</div>
-                    <div style="font-size:12px; margin-top:5px;">${err.message}</div>
-                    <div style="font-size:10px; margin-top:10px; color:#555;">(Перевірте RLS та SQL в Supabase)</div>
+                console.error(err);
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('error-container').innerHTML = `
+                    <div class="error-msg">
+                        <b>Помилка підключення!</b><br>
+                        ${err.message}<br><br>
+                        <small>Порада: Переконайтеся, що в Supabase вимкнено RLS (Disable RLS) у налаштуваннях таблиці products.</small>
+                    </div>
                 `;
             }
         }
 
         function renderProducts() {
             const list = document.getElementById('product-list');
-            list.innerHTML = ''; 
-            document.getElementById('loader').style.display = 'none';
+            const loader = document.getElementById('loader');
             
+            list.innerHTML = '';
+            loader.style.display = 'none';
+
+            if (products.length === 0) {
+                list.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding:20px; color:#888;">Товарів поки немає 🥀<br>Натисніть + щоб додати.</div>';
+                return;
+            }
+
             products.forEach(p => {
-                const div = document.createElement('div');
-                div.className = 'card';
-                div.innerHTML = `
-                    <img src="${p.image_url}" onerror="this.src='https://via.placeholder.com/150'">
+                const el = document.createElement('div');
+                el.className = 'card';
+                el.innerHTML = `
+                    <div class="image-wrapper">
+                        <img src="${p.image_url}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
+                    </div>
                     <div class="info">
-                        <div style="font-weight:600; font-size:14px;">${p.name}</div>
+                        <div class="name">${p.name}</div>
                         <div class="price">${p.price} грн</div>
-                        <button class="btn-add" id="btn-${p.id}" onclick="toggleCart(${p.id})">Додати</button>
-                    </div>`;
-                list.appendChild(div);
+                        <button class="btn-add" id="btn-${p.id}" onclick="toggleCart(${p.id})">Додати в кошик</button>
+                    </div>
+                `;
+                list.appendChild(el);
             });
         }
 
         function toggleCart(id) {
             const btn = document.getElementById(`btn-${id}`);
-            if (cart[id]) { delete cart[id]; btn.classList.remove('active'); btn.innerText = "Додати"; }
-            else { cart[id] = products.find(p => p.id === id); btn.classList.add('active'); btn.innerText = "✓"; }
+            
+            // Ефект вібрації
+            if(tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+
+            if (cart[id]) {
+                delete cart[id];
+                btn.classList.remove('active');
+                btn.innerText = "Додати в кошик";
+            } else {
+                cart[id] = products.find(p => p.id === id);
+                btn.classList.add('active');
+                btn.innerText = "✓ У кошику";
+            }
             updateMainBtn();
         }
 
         function updateMainBtn() {
             const total = Object.values(cart).reduce((sum, item) => sum + item.price, 0);
+            
             if (total > 0) {
-                tg.MainButton.setText(`Замовити: ${total} грн`);
+                tg.MainButton.setText(`Оформити замовлення (${total} грн)`);
+                tg.MainButton.color = "#e91e63"; 
                 tg.MainButton.show();
+                
+                // Налаштування дії кнопки
                 tg.MainButton.onClick(() => {
-                    if(document.getElementById('scene-shop').style.display !== 'none') showScene('checkout');
-                    else submitOrder();
+                    if (document.getElementById('scene-shop').classList.contains('active')) {
+                        showScene('checkout');
+                    } else if (document.getElementById('scene-checkout').classList.contains('active')) {
+                        submitOrder();
+                    }
                 });
-            } else tg.MainButton.hide();
+            } else {
+                tg.MainButton.hide();
+            }
         }
 
-        function showScene(name) {
-            document.querySelectorAll('.scene').forEach(el => el.style.display = 'none');
-            document.getElementById(`scene-${name}`).style.display = 'block';
-            if(name === 'shop') updateMainBtn();
-            else if(name === 'checkout') tg.MainButton.setText('Підтвердити замовлення');
-            else tg.MainButton.hide();
+        function showScene(sceneName) {
+            // Ховаємо всі сцени
+            document.querySelectorAll('.scene').forEach(el => el.classList.remove('active'));
+            // Показуємо потрібну
+            document.getElementById(`scene-${sceneName}`).classList.add('active');
+            
+            // Логіка кнопки
+            tg.MainButton.offClick(submitOrder); // Скидаємо старі події
+            
+            if (sceneName === 'shop') {
+                updateMainBtn(); // Повертаємо ціну
+            } else if (sceneName === 'checkout') {
+                tg.MainButton.setText('✅ Підтвердити та відправити');
+                tg.MainButton.show();
+            } else {
+                tg.MainButton.hide(); // В адмінці ховаємо
+            }
         }
 
         function submitOrder() {
-            const data = { 
-                type: 'order', cart, 
+            const name = document.getElementById('order-name').value.trim();
+            const phone = document.getElementById('order-phone').value.trim();
+            const address = document.getElementById('order-address').value.trim();
+            
+            if (!name || !phone || !address) {
+                tg.showAlert("Будь ласка, заповніть Ім'я, Телефон та Адресу!");
+                return;
+            }
+
+            const data = {
+                type: 'order',
+                cart: cart,
                 info: { 
-                    name: document.getElementById('order-name').value, 
-                    phone: document.getElementById('order-phone').value, 
-                    address: document.getElementById('order-address').value 
+                    name, phone, address, 
+                    comment: document.getElementById('order-comment').value 
                 }
             };
+
             tg.sendData(JSON.stringify(data));
         }
 
@@ -155,11 +286,27 @@
             const name = document.getElementById('new-name').value;
             const price = document.getElementById('new-price').value;
             const image_url = document.getElementById('new-img').value;
+
+            if(!name || !price) {
+                alert("Вкажіть назву та ціну");
+                return;
+            }
+
+            tg.MainButton.showProgress(); // Показати спіннер на кнопці
+
             const { error } = await supabase.from('products').insert([{ name, price, image_url }]);
-            if(error) alert("Помилка: " + error.message);
-            else location.reload();
+
+            tg.MainButton.hideProgress();
+
+            if (error) {
+                alert("Помилка: " + error.message);
+            } else {
+                alert("Товар додано! 🎉");
+                location.reload();
+            }
         }
 
+        // Запуск
         init();
     </script>
 </body>
