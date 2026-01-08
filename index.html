@@ -5,260 +5,130 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Fedelesh Petals</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: var(--tg-theme-bg-color, #f5f5f5);
-            --text-color: var(--tg-theme-text-color, #222);
-            --secondary-bg: var(--tg-theme-secondary-bg-color, #ffffff);
-            --accent-color: #e91e63; /* Фірмовий рожевий */
-            --green-color: #4caf50;
-            --shadow: 0 4px 15px rgba(0,0,0,0.08);
+            --bg: var(--tg-theme-bg-color, #fff);
+            --text: var(--tg-theme-text-color, #000);
+            --accent: #e91e63;
+            --secondary: var(--tg-theme-secondary-bg-color, #f4f4f4);
         }
-
-        body {
-            font-family: 'Montserrat', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px 15px;
-            -webkit-tap-highlight-color: transparent;
-            transition: background-color 0.3s ease;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        h1 {
-            font-size: 24px;
-            font-weight: 700;
-            margin: 0;
-            background: linear-gradient(45deg, #e91e63, #ff9a9e);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.5px;
-        }
-
-        p.subtitle {
-            font-size: 13px;
-            opacity: 0.6;
-            margin-top: 5px;
-        }
-
-        .grid-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            padding-bottom: 80px; /* Місце для кнопки внизу */
-        }
-
-        .card {
-            background: var(--secondary-bg);
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: var(--shadow);
-            display: flex;
-            flex-direction: column;
-            transform: translateY(20px);
-            opacity: 0;
-            animation: fadeUp 0.5s forwards;
-            position: relative;
-        }
-
-        @keyframes fadeUp {
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .image-container {
-            height: 120px;
-            width: 100%;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .image-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-
-        /* Ефект зуму при натисканні */
-        .card:active .image-container img {
-            transform: scale(1.05);
-        }
-
-        .info {
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-            justify-content: space-between;
-        }
-
-        .name {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            line-height: 1.2;
-        }
-
-        .price {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--text-color);
-            margin-bottom: 10px;
-        }
-
-        .btn {
-            background-color: var(--bg-color);
-            color: var(--accent-color);
-            border: 2px solid var(--accent-color);
-            border-radius: 10px;
-            padding: 8px 0;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Стан "Додано" */
-        .btn.active {
-            background-color: var(--accent-color);
-            color: white;
-            border-color: var(--accent-color);
-        }
-
-        .btn:active {
-            transform: scale(0.95);
-        }
-
-        /* Анімація появи галочки */
-        .btn .icon {
-            display: inline-block;
-            transition: transform 0.2s;
-        }
-        
-        /* Skeleton loading animation placeholder */
-        .img-skeleton {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
-
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
+        body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
+        .scene { display: none; animation: fade 0.3s; }
+        .scene.active { display: block; }
+        @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-bottom: 80px; }
+        .card { background: var(--secondary); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .card img { width: 100%; height: 120px; object-fit: cover; }
+        .info { padding: 10px; }
+        .price { font-weight: bold; color: var(--accent); margin: 5px 0; }
+        .btn-add { width: 100%; padding: 8px; background: transparent; border: 1.5px solid var(--accent); color: var(--accent); border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .btn-add.active { background: var(--accent); color: white; }
+        .form-group { margin-bottom: 15px; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; background: var(--secondary); color: var(--text); }
+        #admin-btn { position: fixed; bottom: 20px; left: 20px; background: #333; color: white; width: 50px; height: 50px; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; z-index: 1000; }
+        .back-btn { margin-bottom: 15px; cursor: pointer; color: var(--accent); font-weight: 600; }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>Fedelesh Petals 🌸</h1>
-        <p class="subtitle">Ексклюзивні квіти для неї</p>
-    </header>
+    <div id="scene-shop" class="scene active">
+        <h2 style="text-align:center;">Fedelesh Petals 🌸</h2>
+        <div id="loader" style="text-align:center; padding: 20px;">Завантаження...</div>
+        <div class="grid" id="product-list"></div>
+    </div>
 
-    <div class="grid-container" id="list">
-        </div>
+    <div id="scene-checkout" class="scene">
+        <div class="back-btn" onclick="showScene('shop')">← Назад</div>
+        <h2>Оформлення 📝</h2>
+        <div class="form-group"><input type="text" id="order-name" placeholder="Ваше Ім'я"></div>
+        <div class="form-group"><input type="tel" id="order-phone" placeholder="Номер телефону"></div>
+        <div class="form-group"><textarea id="order-address" rows="3" placeholder="Адреса доставки"></textarea></div>
+    </div>
+
+    <div id="scene-admin" class="scene">
+        <div class="back-btn" onclick="showScene('shop')">← Назад</div>
+        <h2>Новий товар ⚙️</h2>
+        <div class="form-group"><input type="text" id="new-name" placeholder="Назва"></div>
+        <div class="form-group"><input type="number" id="new-price" placeholder="Ціна"></div>
+        <div class="form-group"><input type="text" id="new-img" placeholder="URL фото"></div>
+        <button onclick="saveProduct()" style="width:100%; padding:15px; background:var(--accent); color:white; border:none; border-radius:10px;">Зберегти</button>
+    </div>
+
+    <div id="admin-btn" onclick="showScene('admin')">+</div>
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand(); // На весь екран
+        tg.expand();
 
-        // Основна кнопка (знизу)
-        const mainBtn = tg.MainButton;
-        mainBtn.textColor = "#FFFFFF";
-        mainBtn.color = "#e91e63"; // Колір кнопки "Замовити"
+        const SUPABASE_URL = 'https://qgdnvpmdfqsgtftfkcrm.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_v3KiNJYeKJPgFJ31Q3Q4xw_ZYIGQUn0';
+        const ADMIN_ID = 7240918914;
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let cart = {}; let products = [];
 
-        // Нові красиві картинки (Unsplash)
-        const products = [
-            {id: "p1", name: "101 Троянда", price: 5000, img: "https://images.unsplash.com/photo-1596627008781-84c2f688846c?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"},
-            {id: "p2", name: "Тюльпани Мікс", price: 1200, img: "https://images.unsplash.com/photo-1520763185298-1b434c919102?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"},
-            {id: "p3", name: "Півонії Box", price: 2500, img: "https://images.unsplash.com/photo-1563241527-8687707c770e?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"},
-            {id: "p4", name: "Авторський", price: 1800, img: "https://images.unsplash.com/photo-1562690868-60bbe7293e94?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"}
-        ];
-
-        const cart = {};
-        const list = document.getElementById("list");
-
-        // Генерація карток з затримкою для анімації
-        products.forEach((item, index) => {
-            const el = document.createElement("div");
-            el.className = "card";
-            el.style.animationDelay = `${index * 0.1}s`; // Каскадна анімація
-            
-            el.innerHTML = `
-                <div class="image-container">
-                    <div class="img-skeleton"></div>
-                    <img src="${item.img}" onload="this.previousElementSibling.style.display='none'" onerror="this.src='https://via.placeholder.com/300'">
-                </div>
-                <div class="info">
-                    <div>
-                        <div class="name">${item.name}</div>
-                        <div class="price">${item.price} ₴</div>
-                    </div>
-                    <button class="btn" id="btn${item.id}" onclick="toggleItem('${item.id}', ${item.price})">
-                        <span class="text">Додати</span>
-                    </button>
-                </div>
-            `;
-            list.appendChild(el);
-        });
-
-        // Логіка додавання
-        function toggleItem(id, price) {
-            const btn = document.getElementById("btn" + id);
-            
-            // Вібрація (Haptic Feedback)
-            if(tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('medium');
+        async function init() {
+            if (tg.initDataUnsafe.user && tg.initDataUnsafe.user.id === ADMIN_ID) {
+                document.getElementById('admin-btn').style.display = 'flex';
             }
-
-            if (!cart[id]) {
-                // Додаємо
-                cart[id] = { price: price };
-                btn.classList.add("active");
-                btn.innerHTML = `✓ У кошику`;
-            } else {
-                // Видаляємо
-                delete cart[id];
-                btn.classList.remove("active");
-                btn.innerHTML = `<span class="text">Додати</span>`;
-            }
-            updateMainButton();
+            const { data } = await supabase.from('products').select('*');
+            products = data || [];
+            renderProducts();
         }
 
-        function updateMainButton() {
-            let total = 0;
-            for (let k in cart) total += cart[k].price;
-            
+        function renderProducts() {
+            const list = document.getElementById('product-list');
+            list.innerHTML = ''; document.getElementById('loader').style.display = 'none';
+            products.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.innerHTML = `<img src="${p.image_url}"><div class="info"><b>${p.name}</b><div class="price">${p.price} грн</div><button class="btn-add" id="btn-${p.id}" onclick="toggleCart(${p.id})">Додати</button></div>`;
+                list.appendChild(div);
+            });
+        }
+
+        function toggleCart(id) {
+            const btn = document.getElementById(`btn-${id}`);
+            if (cart[id]) { delete cart[id]; btn.classList.remove('active'); btn.innerText = "Додати"; }
+            else { cart[id] = products.find(p => p.id === id); btn.classList.add('active'); btn.innerText = "✓"; }
+            updateMainBtn();
+        }
+
+        function updateMainBtn() {
+            const total = Object.values(cart).reduce((sum, item) => sum + item.price, 0);
             if (total > 0) {
-                mainBtn.setText(`Оформити замовлення (${total} ₴)`);
-                mainBtn.show();
-            } else {
-                mainBtn.hide();
-            }
+                tg.MainButton.setText(`Замовити: ${total} грн`);
+                tg.MainButton.show();
+                tg.MainButton.onClick(() => {
+                    const shop = document.getElementById('scene-shop');
+                    if (shop.classList.contains('active')) showScene('checkout');
+                    else submitOrder();
+                });
+            } else tg.MainButton.hide();
         }
 
-        // Відправка в бот
-        Telegram.WebApp.onEvent("mainButtonClicked", function(){
-            const data = JSON.stringify(cart);
-            tg.sendData(data);
-        });
+        function showScene(s) {
+            document.querySelectorAll('.scene').forEach(el => el.classList.remove('active'));
+            document.getElementById(`scene-${s}`).classList.add('active');
+            if(s === 'admin') tg.MainButton.hide();
+        }
 
+        function submitOrder() {
+            const data = { type: 'order', cart, info: { name: document.getElementById('order-name').value, phone: document.getElementById('order-phone').value, address: document.getElementById('order-address').value }};
+            tg.sendData(JSON.stringify(data));
+        }
+
+        async function saveProduct() {
+            const name = document.getElementById('new-name').value;
+            const price = document.getElementById('new-price').value;
+            const image_url = document.getElementById('new-img').value;
+            await supabase.from('products').insert([{ name, price, image_url }]);
+            location.reload();
+        }
+
+        init();
     </script>
 </body>
 </html>
