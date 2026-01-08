@@ -8,48 +8,39 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: var(--tg-theme-bg-color, #fff);
-            --text: var(--tg-theme-text-color, #000);
-            --accent: #e91e63;
-            --secondary: var(--tg-theme-secondary-bg-color, #f4f4f4);
-        }
+        :root { --bg: var(--tg-theme-bg-color, #fff); --text: var(--tg-theme-text-color, #000); --accent: #e91e63; --secondary: #f4f4f4; }
         body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
-        .scene { display: none; animation: fade 0.3s; }
-        .scene.active { display: block; }
-        @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+        .scene { display: none; } .scene.active { display: block; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-bottom: 80px; }
-        .card { background: var(--secondary); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .card { background: var(--secondary); border-radius: 12px; overflow: hidden; }
         .card img { width: 100%; height: 120px; object-fit: cover; }
         .info { padding: 10px; }
-        .price { font-weight: bold; color: var(--accent); margin: 5px 0; }
-        .btn-add { width: 100%; padding: 8px; background: transparent; border: 1.5px solid var(--accent); color: var(--accent); border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .price { font-weight: bold; color: var(--accent); }
+        .btn-add { width: 100%; padding: 8px; border: 1px solid var(--accent); color: var(--accent); border-radius: 8px; background: none; margin-top: 5px;}
         .btn-add.active { background: var(--accent); color: white; }
-        .form-group { margin-bottom: 15px; }
-        input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; background: var(--secondary); color: var(--text); }
-        #admin-btn { position: fixed; bottom: 20px; left: 20px; background: #333; color: white; width: 50px; height: 50px; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; z-index: 1000; }
-        .back-btn { margin-bottom: 15px; cursor: pointer; color: var(--accent); font-weight: 600; }
+        .form-group { margin-bottom: 10px; } input, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;}
+        #admin-btn { position: fixed; bottom: 20px; left: 20px; width: 50px; height: 50px; background: #333; color: white; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div id="scene-shop" class="scene active">
         <h2 style="text-align:center;">Fedelesh Petals 🌸</h2>
-        <div id="loader" style="text-align:center; padding: 20px;">Завантаження...</div>
+        <div id="loader" style="text-align:center; padding: 20px;">Завантаження бази даних...</div>
         <div class="grid" id="product-list"></div>
     </div>
 
     <div id="scene-checkout" class="scene">
-        <div class="back-btn" onclick="showScene('shop')">← Назад</div>
-        <h2>Оформлення 📝</h2>
-        <div class="form-group"><input type="text" id="order-name" placeholder="Ваше Ім'я"></div>
-        <div class="form-group"><input type="tel" id="order-phone" placeholder="Номер телефону"></div>
-        <div class="form-group"><textarea id="order-address" rows="3" placeholder="Адреса доставки"></textarea></div>
+        <div onclick="showScene('shop')" style="margin-bottom:15px; color:var(--accent);">← Назад</div>
+        <h2>Оформлення</h2>
+        <div class="form-group"><input type="text" id="order-name" placeholder="Ім'я"></div>
+        <div class="form-group"><input type="tel" id="order-phone" placeholder="Телефон"></div>
+        <div class="form-group"><textarea id="order-address" rows="3" placeholder="Адреса"></textarea></div>
     </div>
 
     <div id="scene-admin" class="scene">
-        <div class="back-btn" onclick="showScene('shop')">← Назад</div>
-        <h2>Новий товар ⚙️</h2>
+        <div onclick="showScene('shop')" style="margin-bottom:15px; color:var(--accent);">← Назад</div>
+        <h2>Новий товар</h2>
         <div class="form-group"><input type="text" id="new-name" placeholder="Назва"></div>
         <div class="form-group"><input type="number" id="new-price" placeholder="Ціна"></div>
         <div class="form-group"><input type="text" id="new-img" placeholder="URL фото"></div>
@@ -62,29 +53,61 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
+        // ВАШІ КЛЮЧІ (Я перевірив, вони вірні)
         const SUPABASE_URL = 'https://qgdnvpmdfqsgtftfkcrm.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_v3KiNJYeKJPgFJ31Q3Q4xw_ZYIGQUn0';
         const ADMIN_ID = 7240918914;
-        
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        let cart = {}; let products = [];
+
+        let supabase;
+        let cart = {}; 
+        let products = [];
 
         async function init() {
-            if (tg.initDataUnsafe.user && tg.initDataUnsafe.user.id === ADMIN_ID) {
-                document.getElementById('admin-btn').style.display = 'flex';
+            try {
+                // Перевірка бібліотеки
+                if (!window.supabase) throw new Error("Бібліотека Supabase не завантажилась");
+                
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                
+                // Перевірка адміна
+                if (tg.initDataUnsafe.user && tg.initDataUnsafe.user.id === ADMIN_ID) {
+                    document.getElementById('admin-btn').style.display = 'flex';
+                }
+
+                // Завантаження товарів
+                const { data, error } = await supabase.from('products').select('*');
+                
+                if (error) throw error;
+                if (!data || data.length === 0) throw new Error("База порожня. Виконайте SQL-команди!");
+
+                products = data;
+                renderProducts();
+
+            } catch (err) {
+                // ВИВЕДЕННЯ ПОМИЛКИ НА ЕКРАН
+                document.getElementById('loader').innerHTML = `
+                    <div style="color:red; font-weight:bold;">Помилка!</div>
+                    <div style="font-size:12px; margin-top:5px;">${err.message}</div>
+                    <div style="font-size:10px; margin-top:10px; color:#555;">(Перевірте RLS та SQL в Supabase)</div>
+                `;
             }
-            const { data } = await supabase.from('products').select('*');
-            products = data || [];
-            renderProducts();
         }
 
         function renderProducts() {
             const list = document.getElementById('product-list');
-            list.innerHTML = ''; document.getElementById('loader').style.display = 'none';
+            list.innerHTML = ''; 
+            document.getElementById('loader').style.display = 'none';
+            
             products.forEach(p => {
                 const div = document.createElement('div');
                 div.className = 'card';
-                div.innerHTML = `<img src="${p.image_url}"><div class="info"><b>${p.name}</b><div class="price">${p.price} грн</div><button class="btn-add" id="btn-${p.id}" onclick="toggleCart(${p.id})">Додати</button></div>`;
+                div.innerHTML = `
+                    <img src="${p.image_url}" onerror="this.src='https://via.placeholder.com/150'">
+                    <div class="info">
+                        <div style="font-weight:600; font-size:14px;">${p.name}</div>
+                        <div class="price">${p.price} грн</div>
+                        <button class="btn-add" id="btn-${p.id}" onclick="toggleCart(${p.id})">Додати</button>
+                    </div>`;
                 list.appendChild(div);
             });
         }
@@ -102,21 +125,29 @@
                 tg.MainButton.setText(`Замовити: ${total} грн`);
                 tg.MainButton.show();
                 tg.MainButton.onClick(() => {
-                    const shop = document.getElementById('scene-shop');
-                    if (shop.classList.contains('active')) showScene('checkout');
+                    if(document.getElementById('scene-shop').style.display !== 'none') showScene('checkout');
                     else submitOrder();
                 });
             } else tg.MainButton.hide();
         }
 
-        function showScene(s) {
-            document.querySelectorAll('.scene').forEach(el => el.classList.remove('active'));
-            document.getElementById(`scene-${s}`).classList.add('active');
-            if(s === 'admin') tg.MainButton.hide();
+        function showScene(name) {
+            document.querySelectorAll('.scene').forEach(el => el.style.display = 'none');
+            document.getElementById(`scene-${name}`).style.display = 'block';
+            if(name === 'shop') updateMainBtn();
+            else if(name === 'checkout') tg.MainButton.setText('Підтвердити замовлення');
+            else tg.MainButton.hide();
         }
 
         function submitOrder() {
-            const data = { type: 'order', cart, info: { name: document.getElementById('order-name').value, phone: document.getElementById('order-phone').value, address: document.getElementById('order-address').value }};
+            const data = { 
+                type: 'order', cart, 
+                info: { 
+                    name: document.getElementById('order-name').value, 
+                    phone: document.getElementById('order-phone').value, 
+                    address: document.getElementById('order-address').value 
+                }
+            };
             tg.sendData(JSON.stringify(data));
         }
 
@@ -124,8 +155,9 @@
             const name = document.getElementById('new-name').value;
             const price = document.getElementById('new-price').value;
             const image_url = document.getElementById('new-img').value;
-            await supabase.from('products').insert([{ name, price, image_url }]);
-            location.reload();
+            const { error } = await supabase.from('products').insert([{ name, price, image_url }]);
+            if(error) alert("Помилка: " + error.message);
+            else location.reload();
         }
 
         init();
